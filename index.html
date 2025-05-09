@@ -125,9 +125,9 @@
     };
 
     // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-    const auth = getAuth(app);
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database(app);
+    const auth = firebase.auth(app);
 
     // البيانات الافتراضية للمدير
     const adminPhone = "1234567890"; // رقم الجوال الافتراضي للمدير
@@ -156,8 +156,8 @@
       const password = document.getElementById("password").value;
       const role = document.getElementById("role-select").value;
 
-      const accountRef = ref(database, 'accounts/' + phone);
-      set(accountRef, {
+      const accountRef = firebase.database().ref('accounts/' + phone);
+      accountRef.set({
         fullName: fullName,
         phone: phone,
         password: password,
@@ -177,8 +177,8 @@
         const phone = "1234567890"; // الرقم الافتراضي للمعلم
         const fullName = "أحمد علي"; // الاسم الافتراضي للمعلم
 
-        const teacherRef = ref(database, 'attendance/' + phone);
-        set(teacherRef, {
+        const teacherRef = firebase.database().ref('attendance/' + phone);
+        teacherRef.set({
           fullName: fullName,
           phone: phone,
           location: teacherLocation,
