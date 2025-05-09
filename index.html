@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
@@ -39,20 +39,17 @@
     th {
       background-color: #eee;
     }
-    .print-btn {
-      margin-top: 20px;
-      padding: 10px 20px;
-      background-color: #4CAF50;
-      color: white;
+  .logout-btn {
+      position: fixed;
+      left: 0;
+      top: 0;
+      background: white;
+      color: #3399ff;
       border: none;
+      padding: 0.3rem 0.7rem;
       cursor: pointer;
-      font-size: 16px;
-      border-radius: 5px;
-    }
-    .print-btn:hover {
-      background-color: #45a049;
-    }
-    #printPage {
+      border-radius: 4px;
+      font-size: 0.9rem;
       display: none;
     }
   </style>
@@ -79,6 +76,9 @@
 
 <div id="managerPage" style="display:none;">
   <h2 id="schoolTitle"></h2>
+  
+  
+  <!-- إضافة معلم بعد تقرير الحضور -->
   <h3>إضافة معلم جديد</h3>
   <form id="addTeacherForm">
     <input type="text" id="teacherName" placeholder="اسم المعلم">
@@ -86,11 +86,10 @@
     <input type="password" id="teacherPassword" placeholder="كلمة المرور">
     <button type="submit">إضافة معلم</button>
   </form>
+</div>
 
-  <button onclick="location.href='https://ansarii212.github.io/attendance/'">تقرير الحضور</button>
 
   
-
 <div id="teacherPage" style="display:none;">
   <h2>مرحبًا <span id="teacherNameDisplay"></span></h2>
   <button id="markAttendance">تحضير الآن</button>
@@ -124,6 +123,7 @@
   let currentUserId = null;
   let schoolLocation = null;
 
+  // إخفاء نموذج تسجيل المدير إذا تم مسبقًا
   if (localStorage.getItem("managerRegistered") === "true") {
     registerForm.style.display = "none";
     document.getElementById("registerTitle").style.display = "none";
@@ -209,48 +209,60 @@
     });
   });
 
-  function loadAttendance() {
-    const tableBody = document.querySelector("#reportTable tbody");
-    if (!currentUserId) return;
+  document.getElementById("markAttendance").addEventListener("click", () => {
+    navigator.geolocation.getCurrentPosition(pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const now = new Date();
+      const date = now.toLocaleDateString("en-CA");
+      const time = now.toLocaleTimeString();
 
-    tableBody.innerHTML = "";
-    const dateFilter = document.getElementById("dateFilter");
-    const path = "attendance/" + currentUserId;
+      const userId = auth.currentUser.uid;
+      get(ref(db, "teachers/" + userId)).then(snap => {
+        const data = snap.val();
+        const managerId = data.managerId;
 
-    onValue(ref(db, path), (snapshot) => {
-      tableBody.innerHTML = "";
-      snapshot.forEach(child => {
-        const data = child.val();
-        if (!dateFilter.value || dateFilter.value === data.date) {
-          const row = `
-            <tr>
-              <td>${data.teacher}</td>
-              <td>${data.status}</td>
-              <td>${data.time}</td>
-              <td>${data.date}</td>
-              <td>${data.lat.toFixed(4)}, ${data.lng.toFixed(4)}</td>
-              <td>${data.distance} م</td>
-            </tr>
-          `;
-          tableBody.innerHTML += row;
-        }
+        get(ref(db, "managers/" + managerId)).then(mgrSnap => {
+          const mgr = mgrSnap.val();
+          const distance = getDistance(mgr.lat, mgr.lng, lat, lng);
+
+          const newRef = push(ref(db, "attendance/" + managerId));
+          set(newRef, {
+            teacher: data.name,
+            status: "حاضر",
+            time,
+            date,
+            lat,
+            lng,
+            distance: Math.round(distance)
+          });
+
+          alert("تم تسجيل الحضور");
+        });
       });
     });
-  }
-
-  document.getElementById("openAttendanceTableBtn").addEventListener("click", () => {
-    document.getElementById("printPage").style.display = "block";
-    loadAttendance();
   });
+
+  
+  
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2 - lat1) * Math.PI/180;
+    const Δλ = (lon2 - lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c;
+  }
 
   logoutBtn.addEventListener("click", () => {
     signOut(auth).then(() => {
-      loginForm.style.display = "block";
-      logoutBtn.style.display = "none";
-      document.getElementById("managerPage").style.display = "none";
-      document.getElementById("teacherPage").style.display = "none";
-      document.getElementById("printPage").style.display = "none";
-      alert("تم تسجيل الخروج");
+      location.reload();
     });
   });
 </script>
