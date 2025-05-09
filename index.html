@@ -25,8 +25,28 @@
       <!-- شاشة إعداد الحسابات -->
       <div class="card">
         <h3>إعداد حسابات المعلمين والمدير</h3>
-        <input type="text" id="phone" placeholder="رقم الجوال">
-        <input type="password" id="password" placeholder="كلمة المرور">
+
+        <!-- قائمة منسدلة لاختيار الدور -->
+        <select id="role">
+          <option value="مدير">مدير</option>
+          <option value="وكيل">وكيل</option>
+          <option value="مشرف">مشرف</option>
+          <option value="إداري">إداري</option>
+          <option value="معلم">معلم</option>
+          <option value="زائر">زائر</option>
+          <option value="طالب">طالب</option>
+          <option value="عامل">عامل</option>
+        </select>
+
+        <!-- خانة الاسم الرباعي -->
+        <input type="text" id="full-name" placeholder="الاسم الرباعي" required>
+
+        <!-- خانة الجوال -->
+        <input type="text" id="phone" placeholder="رقم الجوال (10 أرقام)" required>
+
+        <!-- خانة كلمة المرور -->
+        <input type="password" id="password" placeholder="كلمة المرور (8 حروف وأرقام ورموز وحرف كابيتال)" required>
+
         <button onclick="createAccount()">إنشاء حساب</button>
       </div>
 
@@ -79,24 +99,41 @@
     const database = getDatabase(app);
     const auth = getAuth(app);
 
-    let accounts = [];  // لتخزين حسابات المعلمين
-    let attendance = [];  // لتخزين الحضور والانصراف
-
     // دالة لإنشاء حساب
     function createAccount() {
+      const fullName = document.getElementById("full-name").value;
       const phone = document.getElementById("phone").value;
       const password = document.getElementById("password").value;
+      const role = document.getElementById("role").value;
 
-      if (phone && password) {
-        const accountsRef = ref(database, 'accounts/' + phone);
-        set(accountsRef, {
-          phone: phone,
-          password: password
-        });
-        alert("تم إنشاء الحساب بنجاح");
-      } else {
-        alert("من فضلك أدخل رقم الجوال وكلمة المرور");
+      // التحقق من صحة المدخلات
+      if (!fullName || !phone || !password) {
+        alert("يرجى ملء جميع الحقول");
+        return;
       }
+
+      if (phone.length !== 10 || isNaN(phone)) {
+        alert("رقم الجوال يجب أن يتكون من 10 أرقام");
+        return;
+      }
+
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+      if (!passwordRegex.test(password)) {
+        alert("كلمة المرور يجب أن تحتوي على 8 أحرف وأرقام ورموز وحرف كبير");
+        return;
+      }
+
+      const accountsRef = ref(database, 'accounts/' + phone);
+      set(accountsRef, {
+        fullName: fullName,
+        phone: phone,
+        password: password,
+        role: role
+      });
+      
+      alert("تم إنشاء الحساب بنجاح");
+      document.getElementById("manager-section").classList.add("hidden");
+      document.getElementById("login-section").classList.remove("hidden");
     }
 
     // دالة لتسجيل الدخول
@@ -110,10 +147,16 @@
         if (snapshot.exists()) {
           const account = snapshot.val();
           if (account.password === password) {
-            document.getElementById("login-section").classList.add("hidden");
-            document.getElementById("manager-section").classList.remove("hidden");
-            alert("تم تسجيل الدخول بنجاح");
-            recordAttendance(phone);  // تسجيل الحضور عند الدخول
+            if (phone === "رقم جوال المدير" && password === "كلمة مرور المدير") {
+              // الدخول إلى لوحة التحكم إذا كانت البيانات هي بيانات المدير
+              document.getElementById("login-section").classList.add("hidden");
+              document.getElementById("manager-section").classList.remove("hidden");
+              alert("مرحباً بك في لوحة تحكم المدير");
+            } else {
+              // الدخول إلى شاشة التحضير إذا كانت بيانات معلم أو غير ذلك
+              document.getElementById("login-section").classList.add("hidden");
+              alert("تم تسجيل الدخول بنجاح");
+            }
           } else {
             alert("كلمة المرور غير صحيحة");
           }
@@ -123,53 +166,6 @@
       }).catch((error) => {
         console.error(error);
       });
-    }
-
-    // دالة لتسجيل الحضور
-    function recordAttendance(phone) {
-      const currentTime = new Date().toLocaleTimeString();
-      const currentDate = new Date().toLocaleDateString();
-
-      // إضافة الحضور
-      const attendanceRef = ref(database, 'attendance/' + phone + '/' + currentDate);
-      set(attendanceRef, {
-        phone: phone,
-        time: currentTime,
-        date: currentDate,
-        location: { lat: 30.0444, lng: 31.2357 }  // إحداثيات المدرسة
-      });
-
-      updateAttendanceTable();
-    }
-
-    // دالة لتحديث جدول الحضور
-    function updateAttendanceTable() {
-      const tableBody = document.getElementById("attendance-data");
-      tableBody.innerHTML = "";
-
-      const attendanceRef = ref(database, 'attendance/');
-      get(attendanceRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          const allAttendance = snapshot.val();
-          for (const phone in allAttendance) {
-            const att = allAttendance[phone];
-            const row = document.createElement("tr");
-            row.innerHTML = `<td>${phone}</td><td>${att.phone}</td><td>${att.location.lat}, ${att.location.lng}</td><td>${att.time}</td><td>${att.date}</td>`;
-            tableBody.appendChild(row);
-          }
-        }
-      }).catch((error) => {
-        console.error(error);
-      });
-    }
-
-    // دالة لطباعة التقرير
-    function printReport() {
-      const table = document.getElementById("attendance-table");
-      const newWindow = window.open();
-      newWindow.document.write(table.outerHTML);
-      newWindow.document.close();
-      newWindow.print();
     }
 
     // دالة لتسجيل الخروج
