@@ -92,7 +92,7 @@
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await set(ref(db, `users/${cred.user.uid}`), { role: "teacher", phone });
       alert("تم إنشاء الحساب بنجاح");
-      
+
       // إخفاء شاشة التسجيل وعرض شاشة تسجيل الدخول
       document.getElementById("register-section").classList.add("hidden");
       document.getElementById("auth-section").classList.remove("hidden");
@@ -114,6 +114,7 @@
       const userSnap = await get(ref(db, `users/${currentUser.uid}`));
       currentRole = userSnap.val().role;
 
+      // إخفاء شاشة تسجيل الدخول وعرض الصفحة الرئيسية
       document.getElementById("auth-section").classList.add("hidden");
       document.getElementById("main-section").classList.remove("hidden");
       document.getElementById("user-role").innerText = currentRole;
