@@ -87,27 +87,9 @@
     <button type="submit">إضافة معلم</button>
   </form>
 
-  <button id="openAttendanceTableBtn">فتح جدول الحضور</button>
+<button onclick="window.open('https://github.com/Ansarii212/attendance/')">فتح جدول الحضور</button>
 
-  <div id="printPage">
-    <h3>تقرير تحضير الموظفين</h3>
-    <input type="date" id="dateFilter" onchange="loadAttendance()" />
-    <table id="reportTable">
-      <thead>
-        <tr>
-          <th>اسم المعلم</th>
-          <th>الحضور</th>
-          <th>الوقت</th>
-          <th>التاريخ</th>
-          <th>الإحداثيات</th>
-          <th>المسافة (متر)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <button class="print-btn" onclick="window.print()">طباعة التقرير</button>
-  </div>
-</div>
+  
 
 <div id="teacherPage" style="display:none;">
   <h2>مرحبًا <span id="teacherNameDisplay"></span></h2>
