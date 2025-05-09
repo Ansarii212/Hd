@@ -2,139 +2,181 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>نظام تحضير الموظفين</title>
+  <title>لوحة تحكم المدير</title>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js"></script>
   <style>
     body { font-family: 'Arial', sans-serif; direction: rtl; background: #f0f0f0; padding: 30px; }
     .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
     input, button, select { padding: 10px; margin-top: 10px; width: 100%; font-size: 16px; }
-    video, canvas { display: block; margin: 10px auto; }
-    .hidden { display: none; }
     table { width: 100%; margin-top: 20px; border-collapse: collapse; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    .hidden { display: none; }
+    .card { border-radius: 10px; background: #fff; padding: 20px; margin-top: 20px; box-shadow: 0 0 10px #ddd; }
+    .title { text-align: center; font-size: 20px; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h2>نظام تحضير الموظفين</h2>
+  <div class="container">
+    <div id="manager-section">
+      <h2 class="title">لوحة تحكم المدير</h2>
 
-  <div id="auth-section">
-    <input type="text" id="phone" placeholder="رقم الجوال" value="010" disabled>
-    <input type="password" id="password" placeholder="كلمة المرور" value="admin">
-    <button onclick="login()">تسجيل الدخول</button>
-  </div>
+      <!-- شاشة إعداد الحسابات -->
+      <div class="card">
+        <h3>إعداد حسابات المعلمين والمدير</h3>
+        <input type="text" id="phone" placeholder="رقم الجوال">
+        <input type="password" id="password" placeholder="كلمة المرور">
+        <button onclick="createAccount()">إنشاء حساب</button>
+      </div>
 
-  <div id="main-section" class="hidden">
-    <h3>مرحباً، <span id="user-role"></span></h3>
+      <!-- شاشة التقرير -->
+      <div class="card" id="attendance-report">
+        <h3>تقرير الحضور والانصراف</h3>
+        <table id="attendance-table">
+          <thead>
+            <tr>
+              <th>اسم المعلم</th>
+              <th>رقم الجوال</th>
+              <th>الموقع</th>
+              <th>الوقت</th>
+              <th>التاريخ</th>
+            </tr>
+          </thead>
+          <tbody id="attendance-data"></tbody>
+        </table>
+        <button onclick="printReport()">طباعة التقرير</button>
+      </div>
 
-    <div id="teacher-section" class="hidden">
-      <video id="video" width="300" height="220" autoplay></video>
-      <canvas id="canvas" width="300" height="220" class="hidden"></canvas>
-      <button onclick="capture('in')">تسجيل الحضور</button>
-      <button onclick="capture('out')">تسجيل الانصراف</button>
+      <!-- زر الخروج -->
+      <button onclick="logout()" style="position: absolute; top: 20px; left: 20px;">تسجيل الخروج</button>
     </div>
 
-    <div id="admin-section" class="hidden">
-      <h4>إعدادات الحساب</h4>
-      <p>يمكنك تعديل كلمة المرور ورقم الجوال</p>
-      <input type="text" id="new-phone" placeholder="رقم الجوال" value="010">
-      <input type="password" id="new-pass" placeholder="كلمة المرور" value="admin">
-      <button onclick="updateAccount()">تحديث البيانات</button>
+    <!-- شاشة تسجيل دخول المعلم -->
+    <div id="login-section" class="hidden">
+      <h3>تسجيل الدخول</h3>
+      <input type="text" id="login-phone" placeholder="رقم الجوال">
+      <input type="password" id="login-password" placeholder="كلمة المرور">
+      <button onclick="login()">تسجيل الدخول</button>
     </div>
   </div>
-</div>
 
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  import { getStorage, ref as sRef, uploadBytes } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+  <script>
+    // بيانات Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCr4T8GLRxtf_6LNrokjKvmBOwSkuGO5yQ",
+      authDomain: "hamsa-6009e.firebaseapp.com",
+      databaseURL: "https://hamsa-6009e-default-rtdb.firebaseio.com",
+      projectId: "hamsa-6009e",
+      storageBucket: "hamsa-6009e.firebasestorage.app",
+      messagingSenderId: "998163671039",
+      appId: "1:998163671039:web:d1930ea5b71a3a3fc729ca",
+      measurementId: "G-PD1QB8X0FE"
+    };
 
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyCr4T8GLRxtf_6LNrokjKvmBOwSkuGO5yQ",
-    authDomain: "hamsa-6009e.firebaseapp.com",
-    databaseURL: "https://hamsa-6009e-default-rtdb.firebaseio.com",
-    projectId: "hamsa-6009e",
-    storageBucket: "hamsa-6009e.appspot.com",
-    messagingSenderId: "998163671039",
-    appId: "1:998163671039:web:d1930ea5b71a3a3fc729ca",
-    measurementId: "G-PD1QB8X0FE"
-  };
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const auth = getAuth(app);
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
-  const storage = getStorage(app);
+    let accounts = [];  // لتخزين حسابات المعلمين
+    let attendance = [];  // لتخزين الحضور والانصراف
 
-  let currentUser = null;
-  let currentRole = null;
+    // دالة لإنشاء حساب
+    function createAccount() {
+      const phone = document.getElementById("phone").value;
+      const password = document.getElementById("password").value;
 
-  async function login() {
-    const phone = document.getElementById("phone").value;
-    const password = document.getElementById("password").value;
-    const email = `${phone}@app.com`;  // استخدام الجوال كإيميل افتراضي
-
-    try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      currentUser = cred.user;
-
-      const userSnap = await get(ref(db, `users/${currentUser.uid}`));
-      currentRole = userSnap.val().role;
-
-      document.getElementById("auth-section").classList.add("hidden");
-      document.getElementById("main-section").classList.remove("hidden");
-      document.getElementById("user-role").innerText = currentRole;
-
-      if (currentRole === 'teacher') {
-        document.getElementById("teacher-section").classList.remove("hidden");
-        startCamera();
+      if (phone && password) {
+        const accountsRef = ref(database, 'accounts/' + phone);
+        set(accountsRef, {
+          phone: phone,
+          password: password
+        });
+        alert("تم إنشاء الحساب بنجاح");
       } else {
-        document.getElementById("admin-section").classList.remove("hidden");
+        alert("من فضلك أدخل رقم الجوال وكلمة المرور");
       }
-    } catch (error) {
-      alert("خطأ في الدخول: " + error.message);
     }
-  }
 
-  async function updateAccount() {
-    const newPhone = document.getElementById("new-phone").value;
-    const newPassword = document.getElementById("new-pass").value;
-    const email = `${newPhone}@app.com`;
+    // دالة لتسجيل الدخول
+    function login() {
+      const phone = document.getElementById("login-phone").value;
+      const password = document.getElementById("login-password").value;
 
-    try {
-      await signInWithEmailAndPassword(auth, email, newPassword);
-      alert("تم تحديث البيانات بنجاح");
-    } catch (error) {
-      alert("خطأ في تحديث البيانات: " + error.message);
+      // التحقق من بيانات الحساب من Firebase
+      const accountRef = ref(database, 'accounts/' + phone);
+      get(accountRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const account = snapshot.val();
+          if (account.password === password) {
+            document.getElementById("login-section").classList.add("hidden");
+            document.getElementById("manager-section").classList.remove("hidden");
+            alert("تم تسجيل الدخول بنجاح");
+            recordAttendance(phone);  // تسجيل الحضور عند الدخول
+          } else {
+            alert("كلمة المرور غير صحيحة");
+          }
+        } else {
+          alert("رقم الجوال غير موجود");
+        }
+      }).catch((error) => {
+        console.error(error);
+      });
     }
-  }
 
-  function startCamera() {
-    const video = document.getElementById("video");
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => video.srcObject = stream)
-      .catch(err => alert("فشل تشغيل الكاميرا"));
-  }
+    // دالة لتسجيل الحضور
+    function recordAttendance(phone) {
+      const currentTime = new Date().toLocaleTimeString();
+      const currentDate = new Date().toLocaleDateString();
 
-  function capture(type) {
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+      // إضافة الحضور
+      const attendanceRef = ref(database, 'attendance/' + phone + '/' + currentDate);
+      set(attendanceRef, {
+        phone: phone,
+        time: currentTime,
+        date: currentDate,
+        location: { lat: 30.0444, lng: 31.2357 }  // إحداثيات المدرسة
+      });
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob(async blob => {
-      const date = new Date().toISOString().split("T")[0];
-      const time = new Date().toLocaleTimeString();
-      const imgPath = `attendance/${currentUser.uid}/${date}_${type}.jpg`;
-      const fileRef = sRef(storage, imgPath);
+      updateAttendanceTable();
+    }
 
-      await uploadBytes(fileRef, blob);
-      await set(ref(db, `attendance/${currentUser.uid}/${date}_${type}`), { time, imgPath });
+    // دالة لتحديث جدول الحضور
+    function updateAttendanceTable() {
+      const tableBody = document.getElementById("attendance-data");
+      tableBody.innerHTML = "";
 
-      alert(type === 'in' ? "تم تسجيل الحضور" : "تم تسجيل الانصراف");
-    }, "image/jpeg");
-  }
-</script>
+      const attendanceRef = ref(database, 'attendance/');
+      get(attendanceRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const allAttendance = snapshot.val();
+          for (const phone in allAttendance) {
+            const att = allAttendance[phone];
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${phone}</td><td>${att.phone}</td><td>${att.location.lat}, ${att.location.lng}</td><td>${att.time}</td><td>${att.date}</td>`;
+            tableBody.appendChild(row);
+          }
+        }
+      }).catch((error) => {
+        console.error(error);
+      });
+    }
+
+    // دالة لطباعة التقرير
+    function printReport() {
+      const table = document.getElementById("attendance-table");
+      const newWindow = window.open();
+      newWindow.document.write(table.outerHTML);
+      newWindow.document.close();
+      newWindow.print();
+    }
+
+    // دالة لتسجيل الخروج
+    function logout() {
+      document.getElementById("manager-section").classList.add("hidden");
+      document.getElementById("login-section").classList.remove("hidden");
+    }
+  </script>
 </body>
 </html>
