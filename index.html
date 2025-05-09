@@ -52,6 +52,9 @@
     .print-btn:hover {
       background-color: #45a049;
     }
+    #printPage {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -76,8 +79,6 @@
 
 <div id="managerPage" style="display:none;">
   <h2 id="schoolTitle"></h2>
-  
-  <!-- إضافة معلم بعد تقرير الحضور -->
   <h3>إضافة معلم جديد</h3>
   <form id="addTeacherForm">
     <input type="text" id="teacherName" placeholder="اسم المعلم">
@@ -86,32 +87,31 @@
     <button type="submit">إضافة معلم</button>
   </form>
 
-  <!-- زر لفتح جدول الحضور في صفحة جديدة -->
   <button id="openAttendanceTableBtn">فتح جدول الحضور</button>
+
+  <div id="printPage">
+    <h3>تقرير تحضير الموظفين</h3>
+    <input type="date" id="dateFilter" onchange="loadAttendance()" />
+    <table id="reportTable">
+      <thead>
+        <tr>
+          <th>اسم المعلم</th>
+          <th>الحضور</th>
+          <th>الوقت</th>
+          <th>التاريخ</th>
+          <th>الإحداثيات</th>
+          <th>المسافة (متر)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button class="print-btn" onclick="window.print()">طباعة التقرير</button>
+  </div>
 </div>
 
 <div id="teacherPage" style="display:none;">
   <h2>مرحبًا <span id="teacherNameDisplay"></span></h2>
   <button id="markAttendance">تحضير الآن</button>
-</div>
-
-<!-- صفحة الطباعة -->
-<div id="printPage" style="display:none;">
-  <h3>تقرير تحضير الموظفين</h3>
-  <table id="reportTable">
-    <thead>
-      <tr>
-        <th>اسم المعلم</th>
-        <th>الحضور</th>
-        <th>الوقت</th>
-        <th>التاريخ</th>
-        <th>الإحداثيات</th>
-        <th>المسافة (متر)</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <button class="print-btn" onclick="window.print()">طباعة التقرير</button>
 </div>
 
 <script type="module">
@@ -142,7 +142,6 @@
   let currentUserId = null;
   let schoolLocation = null;
 
-  // إخفاء نموذج تسجيل المدير إذا تم مسبقًا
   if (localStorage.getItem("managerRegistered") === "true") {
     registerForm.style.display = "none";
     document.getElementById("registerTitle").style.display = "none";
@@ -230,8 +229,9 @@
 
   function loadAttendance() {
     const tableBody = document.querySelector("#reportTable tbody");
-    tableBody.innerHTML = "";
+    if (!currentUserId) return;
 
+    tableBody.innerHTML = "";
     const dateFilter = document.getElementById("dateFilter");
     const path = "attendance/" + currentUserId;
 
@@ -256,13 +256,9 @@
     });
   }
 
-  // عند الضغط على زر فتح جدول الحضور
   document.getElementById("openAttendanceTableBtn").addEventListener("click", () => {
-    const newWindow = window.open("", "_blank", "width=800,height=600");
-    newWindow.document.write("<h3>تقرير تحضير الموظفين</h3>");
-    newWindow.document.write('<table id="reportTable"><thead><tr><th>اسم المعلم</th><th>الحضور</th><th>الوقت</th><th>التاريخ</th><th>الإحداثيات</th><th>المسافة (متر)</th></tr></thead><tbody></tbody></table>');
-    newWindow.document.write('<button class="print-btn" onclick="window.print()">طباعة التقرير</button>'); // زر الطباعة
-    loadAttendance(); // عرض البيانات في الجدول
+    document.getElementById("printPage").style.display = "block";
+    loadAttendance();
   });
 
   logoutBtn.addEventListener("click", () => {
@@ -271,6 +267,7 @@
       logoutBtn.style.display = "none";
       document.getElementById("managerPage").style.display = "none";
       document.getElementById("teacherPage").style.display = "none";
+      document.getElementById("printPage").style.display = "none";
       alert("تم تسجيل الخروج");
     });
   });
