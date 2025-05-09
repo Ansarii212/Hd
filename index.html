@@ -17,22 +17,21 @@
 <div class="container">
   <h2>نظام تحضير الموظفين</h2>
 
-  <!-- قسم التسجيل لأول مرة -->
+  <!-- شاشة التسجيل -->
   <div id="register-section">
-    <h3>تسجيل حساب جديد</h3>
+    <h3>إنشاء حساب</h3>
     <input type="text" id="new-phone" placeholder="رقم الجوال">
     <input type="password" id="new-pass" placeholder="كلمة المرور">
-    <button onclick="register()">إنشاء الحساب</button>
+    <button onclick="register()">تسجيل</button>
   </div>
 
-  <!-- قسم تسجيل الدخول -->
+  <!-- شاشة تسجيل الدخول -->
   <div id="auth-section" class="hidden">
     <input type="text" id="phone" placeholder="رقم الجوال">
     <input type="password" id="password" placeholder="كلمة المرور">
     <button onclick="login()">تسجيل الدخول</button>
   </div>
 
-  <!-- قسم المستخدم بعد تسجيل الدخول -->
   <div id="main-section" class="hidden">
     <h3>مرحباً، <span id="user-role"></span></h3>
 
@@ -47,7 +46,7 @@
       <h4>إنشاء حساب معلم</h4>
       <input type="text" id="new-phone-admin" placeholder="رقم الجوال">
       <input type="password" id="new-pass-admin" placeholder="كلمة المرور">
-      <button onclick="register()">إنشاء</button>
+      <button onclick="registerAdmin()">إنشاء</button>
 
       <h4>تقارير الحضور</h4>
       <button onclick="loadReports()">تحميل التقارير</button>
@@ -83,7 +82,7 @@
   let currentUser = null;
   let currentRole = null;
 
-  // دالة تسجيل المستخدم لأول مرة
+  // تسجيل حساب جديد
   async function register() {
     const phone = document.getElementById("new-phone").value;
     const password = document.getElementById("new-pass").value;
@@ -94,7 +93,7 @@
       await set(ref(db, `users/${cred.user.uid}`), { role: "teacher", phone });
       alert("تم إنشاء الحساب بنجاح");
       
-      // بعد التسجيل، إخفاء شاشة التسجيل وعرض شاشة تسجيل الدخول
+      // إخفاء شاشة التسجيل وعرض شاشة تسجيل الدخول
       document.getElementById("register-section").classList.add("hidden");
       document.getElementById("auth-section").classList.remove("hidden");
     } catch (error) {
@@ -102,7 +101,7 @@
     }
   }
 
-  // دالة تسجيل الدخول
+  // تسجيل الدخول
   async function login() {
     const phone = document.getElementById("phone").value;
     const password = document.getElementById("password").value;
@@ -130,7 +129,7 @@
     }
   }
 
-  // دالة لبدء تشغيل الكاميرا
+  // البدء بالكاميرا
   function startCamera() {
     const video = document.getElementById("video");
     navigator.mediaDevices.getUserMedia({ video: true })
@@ -138,7 +137,7 @@
       .catch(err => alert("فشل تشغيل الكاميرا"));
   }
 
-  // دالة لالتقاط الصورة (تسجيل الحضور أو الانصراف)
+  // التقاط صورة
   function capture(type) {
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
@@ -158,7 +157,7 @@
     }, "image/jpeg");
   }
 
-  // دالة لتحميل التقارير
+  // تحميل التقارير
   async function loadReports() {
     const snapshot = await get(ref(db, 'attendance'));
     let html = `<table><tr><th>رقم المعلم</th><th>تاريخ</th><th>الحضور</th><th>الانصراف</th></tr>`;
