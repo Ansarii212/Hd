@@ -54,14 +54,10 @@
         .form-section {
             margin-bottom: 20px;
         }
-        .title {
-            font-size: 1.5em;
-            margin-bottom: 10px;
-        }
-        .employee-list, .attendance-report {
+        .employee-list {
             margin-top: 20px;
         }
-        .employee-item, .attendance-item {
+        .employee-item {
             padding: 10px;
             background-color: #ecf0f1;
             margin-bottom: 10px;
@@ -71,28 +67,14 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header with system and school info -->
         <header>
             <h1>نظام حضوري الذكي</h1>
             <p>اسم المدرسة: <span id="school-name"></span></p>
             <p>اسم المدير: <span id="manager-name"></span></p>
         </header>
 
-        <!-- Login and Manager Section -->
-        <div id="login-section">
-            <div class="form-section">
-                <label for="username">اسم المستخدم:</label>
-                <input type="text" id="username" placeholder="أدخل اسم المستخدم">
-            </div>
-            <div class="form-section">
-                <label for="password">كلمة المرور:</label>
-                <input type="password" id="password" placeholder="أدخل كلمة المرور">
-            </div>
-            <button onclick="login()">تسجيل الدخول</button>
-        </div>
-
-        <!-- Admin Dashboard -->
-        <div id="admin-dashboard" style="display: none;">
+        <!-- Admin Dashboard فقط -->
+        <div id="admin-dashboard">
             <div class="form-section">
                 <label for="employee-name">اسم الموظف:</label>
                 <input type="text" id="employee-name" placeholder="أدخل اسم الموظف">
@@ -115,17 +97,6 @@
                 <h3>قائمة الموظفين</h3>
                 <div id="employee-list"></div>
             </div>
-
-            <button onclick="logout()">تسجيل الخروج</button>
-        </div>
-
-        <!-- Employee Dashboard -->
-        <div id="employee-dashboard" style="display: none;">
-            <button onclick="markAttendance()">تسجيل الحضور</button>
-            <div class="attendance-report">
-                <h3>تقارير الحضور</h3>
-                <div id="attendance-list"></div>
-            </div>
         </div>
 
         <footer>
@@ -133,87 +104,63 @@
         </footer>
     </div>
 
-    <!-- Firebase Script -->
+    <!-- Firebase Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.10.0/firebase-storage.js"></script>
 
     <script>
-        // Initialize Firebase
+        // Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyCr4T8GLRxtf_6LNrokjKvmBOwSkuGO5yQ",
             authDomain: "hamsa-6009e.firebaseapp.com",
             databaseURL: "https://hamsa-6009e-default-rtdb.firebaseio.com",
             projectId: "hamsa-6009e",
-            storageBucket: "hamsa-6009e.firebasestorage.app",
+            storageBucket: "hamsa-6009e.appspot.com",
             messagingSenderId: "998163671039",
             appId: "1:998163671039:web:d1930ea5b71a3a3fc729ca",
             measurementId: "G-PD1QB8X0FE"
         };
         const app = firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const database = firebase.database();
-        const storage = firebase.storage();
 
-        // Variables for user and admin info
-        let currentUser = null;
+        // إعدادات أولية
         let schoolName = 'مدرسة الفجر';
         let managerName = 'أحمد علي';
 
-        // Initialize dashboard
         document.getElementById("school-name").textContent = schoolName;
         document.getElementById("manager-name").textContent = managerName;
 
-        // Login function for Admin and Employee
-        function login() {
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-
-            // Fake login for now
-            if (username === "admin" && password === "admin123") {
-                currentUser = { type: "admin" };
-                showAdminDashboard();
-            } else {
-                const userRef = database.ref('employees/' + username);
-                userRef.once('value').then(snapshot => {
-                    const userData = snapshot.val();
-                    if (userData && userData.password === password) {
-                        currentUser = { type: "employee", ...userData };
-                        showEmployeeDashboard();
-                    } else {
-                        alert("خطأ في اسم المستخدم أو كلمة المرور");
-                    }
-                });
-            }
-        }
-
-        // Show Admin Dashboard
-        function showAdminDashboard() {
-            document.getElementById("login-section").style.display = "none";
-            document.getElementById("admin-dashboard").style.display = "block";
-        }
-
-        // Add Employee function
+        // إضافة موظف
         function addEmployee() {
             const name = document.getElementById("employee-name").value;
             const phone = document.getElementById("employee-phone").value;
             const password = document.getElementById("employee-password").value;
             const job = document.getElementById("employee-job").value;
-            const employeeRef = database.ref('employees/' + phone);
 
+            if (!name || !phone || !password || !job) {
+                alert("يرجى تعبئة جميع الحقول");
+                return;
+            }
+
+            const employeeRef = database.ref('employees/' + phone);
             employeeRef.set({
                 name: name,
                 phone: phone,
                 password: password,
                 job: job
             }).then(() => {
-                alert("تم إضافة الموظف بنجاح");
+                alert("تمت إضافة الموظف بنجاح");
+                document.getElementById("employee-name").value = "";
+                document.getElementById("employee-phone").value = "";
+                document.getElementById("employee-password").value = "";
+                document.getElementById("employee-job").value = "";
                 loadEmployeeList();
             });
         }
 
-        // Load Employee List
+        // تحميل قائمة الموظفين
         function loadEmployeeList() {
             const employeeListDiv = document.getElementById("employee-list");
             employeeListDiv.innerHTML = "";
@@ -228,50 +175,10 @@
             });
         }
 
-        // Show Employee Dashboard
-        function showEmployeeDashboard() {
-            document.getElementById("login-section").style.display = "none";
-            document.getElementById("employee-dashboard").style.display = "block";
-        }
-
-        // Mark Attendance
-        function markAttendance() {
-            const timestamp = new Date().toISOString();
-            const location = { latitude: 24.7136, longitude: 46.6753 }; // Example location
-            const userImage = "image_url"; // Placeholder for image upload
-            const attendanceRef = database.ref('attendances/' + currentUser.phone);
-            attendanceRef.push({
-                timestamp: timestamp,
-                location: location,
-                image: userImage
-            }).then(() => {
-                alert("تم تسجيل الحضور بنجاح");
-                loadAttendanceReport();
-            });
-        }
-
-        // Load Attendance Report
-        function loadAttendanceReport() {
-            const attendanceListDiv = document.getElementById("attendance-list");
-            attendanceListDiv.innerHTML = "";
-            database.ref('attendances/' + currentUser.phone).once('value').then(snapshot => {
-                snapshot.forEach(childSnapshot => {
-                    const attendance = childSnapshot.val();
-                    const div = document.createElement("div");
-                    div.classList.add("attendance-item");
-                    div.innerHTML = `التاريخ: ${attendance.timestamp} - الموقع: ${attendance.location.latitude}, ${attendance.location.longitude}`;
-                    attendanceListDiv.appendChild(div);
-                });
-            });
-        }
-
-        // Logout
-        function logout() {
-            currentUser = null;
-            document.getElementById("admin-dashboard").style.display = "none";
-            document.getElementById("employee-dashboard").style.display = "none";
-            document.getElementById("login-section").style.display = "block";
-        }
+        // إظهار لوحة المدير تلقائيًا
+        window.onload = function () {
+            loadEmployeeList();
+        };
     </script>
 </body>
 </html>
